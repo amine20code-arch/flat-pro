@@ -1,0 +1,30 @@
+name: Build APK
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Arrange files
+        run: |
+          mkdir -p src/main/java/com/streamtv/iptv src/main/res/drawable
+          for f in *.kt; do if [ -f "$f" ]; then mv "$f" src/main/java/com/streamtv/iptv/; fi; done
+          if [ -f AndroidManifest.xml ]; then mv AndroidManifest.xml src/main/; fi
+          for f in banner.xml ic_launcher.xml; do if [ -f "$f" ]; then mv "$f" src/main/res/drawable/; fi; done
+          if [ -f build_gradle.kts ]; then mv build_gradle.kts build.gradle.kts; fi
+          if [ -f settings_gradle.kts ]; then mv settings_gradle.kts settings.gradle.kts; fi
+          find . -path ./.git -prune -o -type f -print | sort
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.9
+      - run: gradle assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: StreamTV-apk
+          path: build/outputs/apk/debug/*.apk
